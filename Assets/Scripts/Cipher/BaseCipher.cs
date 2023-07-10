@@ -7,6 +7,7 @@ public class BaseCipher : MonoBehaviour
 {
     [Tooltip("The time curve to shift between letters")]
     [SerializeField] private AnimationCurve letterShiftTimeCurve;
+    [SerializeField] private float timeCurveMultiplier = 1.0f;
     [HideInInspector] public CipherSelector.CipherType cipherType = CipherSelector.CipherType.Caesar;
     public UnityEvent<char> OnCharTranslate;
 
@@ -21,8 +22,9 @@ public class BaseCipher : MonoBehaviour
         float time = 0;
         for (int i = 0; i < translationBuffer.Length; i++)
         {
+            if (translationBuffer[i] == ' ') { OnCharTranslate.Invoke(' '); continue; }
             Encode(ref translationBuffer[i], key);
-            yield return new WaitForSeconds(letterShiftTimeCurve.Evaluate(time));
+            yield return new WaitForSeconds(letterShiftTimeCurve.Evaluate(time) * timeCurveMultiplier);
             time += Time.fixedDeltaTime;
         }
     }
@@ -102,8 +104,9 @@ public class BaseCipher : MonoBehaviour
         float time = 0;
         for (int i = 0; i < translationBuffer.Length; i++)
         {
+            if (translationBuffer[i] == ' ') { OnCharTranslate.Invoke(' '); continue; }
             Decode(ref translationBuffer[i], key);
-            yield return new WaitForSeconds(letterShiftTimeCurve.Evaluate(time));
+            yield return new WaitForSeconds(letterShiftTimeCurve.Evaluate(time) * timeCurveMultiplier);
             time += Time.fixedDeltaTime;
         }
     }

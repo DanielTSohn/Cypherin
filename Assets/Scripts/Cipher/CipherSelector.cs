@@ -36,6 +36,7 @@ public class CipherSelector : MonoBehaviour
     public void UpdateText(char character)
     {
         outputText.text += character;
+        GUIUtility.systemCopyBuffer = outputText.text;
     }
 
     public void EncodeText()
