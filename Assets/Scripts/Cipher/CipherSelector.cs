@@ -24,9 +24,11 @@ public class CipherSelector : MonoBehaviour
         {
             case CipherType.Caesar:
                 keyInput.characterValidation = TMP_InputField.CharacterValidation.Integer;
+                keyInput.characterLimit = 9;
                 break;
             case CipherType.Vigenere:
                 keyInput.characterValidation = TMP_InputField.CharacterValidation.Name;
+                keyInput.characterLimit = 0;
                 break;
             default:
                 break;
@@ -47,7 +49,8 @@ public class CipherSelector : MonoBehaviour
             switch (cipherType)
             {
                 case CipherType.Caesar:
-                    cipher.Encrypt(textInput.text.ToLower(), int.Parse(keyInput.text));
+                    int.TryParse(keyInput.text, out int value);
+                    cipher.Encrypt(textInput.text.ToLower(), value % 26);
                     break;
                 case CipherType.Vigenere:
                     cipher.Encrypt(textInput.text.ToLower(), keyInput.text.ToLower());
@@ -70,7 +73,8 @@ public class CipherSelector : MonoBehaviour
             switch (cipherType)
             {
                 case CipherType.Caesar:
-                    cipher.Decrypt(textInput.text.ToLower(), int.Parse(keyInput.text));
+                    int.TryParse(keyInput.text, out int value);
+                    cipher.Decrypt(textInput.text.ToLower(), value % 26);
                     break;
                 case CipherType.Vigenere:
                     cipher.Decrypt(textInput.text.ToLower(), keyInput.text.ToLower());

@@ -7,6 +7,7 @@ public class BaseCipher : MonoBehaviour
 {
     [Tooltip("The time curve to shift between letters")]
     [SerializeField] private float typeSpeedMultiplier = 1.0f;
+    [SerializeField] private AnimationCurve speedupCurve;
     [HideInInspector] public CipherSelector.CipherType cipherType = CipherSelector.CipherType.Caesar;
     public UnityEvent<char> OnCharTranslate;
     public UnityEvent OnEncrypted;
@@ -57,9 +58,12 @@ public class BaseCipher : MonoBehaviour
             if (translationBuffer[i] == ' ') { OnCharTranslate.Invoke(' '); continue; }
             Encode(ref translationBuffer[i], position, ref key);
             position++;
-            yield return new WaitForSeconds(Mathf.PerlinNoise1D(time) * typeSpeedMultiplier);
+
+            float waitTime = Mathf.PerlinNoise1D(time) * typeSpeedMultiplier * speedupCurve.Evaluate(time);
+            if(waitTime >= 0) { yield return new WaitForSeconds(waitTime); }
             time += Time.fixedDeltaTime;
         }
+
         OnEncrypted.Invoke();
     }
 
@@ -105,14 +109,16 @@ public class BaseCipher : MonoBehaviour
 
     protected IEnumerator EnumerateDecryption<KeyType>(char[] translationBuffer, KeyType key)
     {
-        float time = 0;
+        float time = 1;
         int position = 0;
         for (int i = 0; i < translationBuffer.Length; i++)
         {
             if (translationBuffer[i] == ' ') { OnCharTranslate.Invoke(' '); continue; }
             Decode(ref translationBuffer[i], position, ref key);
             position++;
-            yield return new WaitForSeconds(Mathf.PerlinNoise1D(time) * typeSpeedMultiplier);
+
+            float waitTime = Mathf.PerlinNoise1D(time) * typeSpeedMultiplier * speedupCurve.Evaluate(time);
+            if (waitTime >= 0) { yield return new WaitForSeconds(waitTime); }
             time += Time.fixedDeltaTime;
         }
         OnDecrypted.Invoke();
