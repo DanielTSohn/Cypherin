@@ -9,6 +9,8 @@ public class BaseCipher : MonoBehaviour
     [SerializeField] private float typeSpeedMultiplier = 1.0f;
     [HideInInspector] public CipherSelector.CipherType cipherType = CipherSelector.CipherType.Caesar;
     public UnityEvent<char> OnCharTranslate;
+    public UnityEvent OnEncrypted;
+    public UnityEvent OnDecrypted;
 
     Dictionary<char, int> alphabet = new Dictionary<char, int>()
         {
@@ -58,6 +60,7 @@ public class BaseCipher : MonoBehaviour
             yield return new WaitForSeconds(Mathf.PerlinNoise1D(time) * typeSpeedMultiplier);
             time += Time.fixedDeltaTime;
         }
+        OnEncrypted.Invoke();
     }
 
     protected void Encode<KeyType>(ref char character, int position, ref KeyType key)
@@ -112,6 +115,7 @@ public class BaseCipher : MonoBehaviour
             yield return new WaitForSeconds(Mathf.PerlinNoise1D(time) * typeSpeedMultiplier);
             time += Time.fixedDeltaTime;
         }
+        OnDecrypted.Invoke();
     }
 
     protected void Decode<KeyType>(ref char character, int position, ref KeyType key)
