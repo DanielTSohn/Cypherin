@@ -6,10 +6,39 @@ using UnityEngine.Events;
 public class BaseCipher : MonoBehaviour
 {
     [Tooltip("The time curve to shift between letters")]
-    [SerializeField] private AnimationCurve letterShiftTimeCurve;
-    [SerializeField] private float timeCurveMultiplier = 1.0f;
+    [SerializeField] private float typeSpeedMultiplier = 1.0f;
     [HideInInspector] public CipherSelector.CipherType cipherType = CipherSelector.CipherType.Caesar;
     public UnityEvent<char> OnCharTranslate;
+
+    Dictionary<char, int> alphabet = new Dictionary<char, int>()
+        {
+            { 'a', 0 },
+            { 'b', 1 },
+            { 'c', 2 },
+            { 'd', 3 },
+            { 'e', 4 },
+            { 'f', 5 },
+            { 'g', 6 },
+            { 'h', 7 },
+            { 'i', 8 },
+            { 'j', 9 },
+            { 'k', 10 },
+            { 'l', 11 },
+            { 'm', 12 },
+            { 'n', 13 },
+            { 'o', 14 },
+            { 'p', 15 },
+            { 'q', 16 },
+            { 'r', 17 },
+            { 's', 18 },
+            { 't', 19 },
+            { 'u', 20 },
+            { 'v', 21 },
+            { 'w', 22 },
+            { 'x', 23 },
+            { 'y', 24 },
+            { 'z', 25 }
+        };
 
     public void Encrypt<KeyType>(in string plainText, KeyType key)
     {
@@ -20,16 +49,18 @@ public class BaseCipher : MonoBehaviour
     protected IEnumerator EnumerateEncryption<KeyType>(char[] translationBuffer, KeyType key)
     {
         float time = 0;
+        int position = 0;
         for (int i = 0; i < translationBuffer.Length; i++)
         {
             if (translationBuffer[i] == ' ') { OnCharTranslate.Invoke(' '); continue; }
-            Encode(ref translationBuffer[i], key);
-            yield return new WaitForSeconds(letterShiftTimeCurve.Evaluate(time) * timeCurveMultiplier);
+            Encode(ref translationBuffer[i], position, ref key);
+            position++;
+            yield return new WaitForSeconds(Mathf.PerlinNoise1D(time) * typeSpeedMultiplier);
             time += Time.fixedDeltaTime;
         }
     }
 
-    protected void Encode<KeyType>(ref char character, KeyType key)
+    protected void Encode<KeyType>(ref char character, int position, ref KeyType key)
     {
         switch(cipherType)
         {
@@ -37,7 +68,8 @@ public class BaseCipher : MonoBehaviour
                 switch (key)
                 {
                     case int shift:
-                        character = (char)(((character + shift - 'a') % 26) + 'a');
+                        character = (char)((alphabet[character] + shift) % 26);
+                        character += 'a';
                         break;
                     default:
                         Debug.LogError("Incorrect key type");
@@ -47,8 +79,9 @@ public class BaseCipher : MonoBehaviour
             case CipherSelector.CipherType.Vigenere:
                 switch (key)
                 {
-                    case string:
-
+                    case string word:
+                        character = (char)((alphabet[character] + alphabet[word[position % word.Length]]) % 26);
+                        character += 'a';
                         break;
                     default:
                         Debug.LogError("Incorrect key type");
@@ -67,7 +100,21 @@ public class BaseCipher : MonoBehaviour
         StartCoroutine(EnumerateDecryption(cipherText.ToCharArray(), key));
     }
 
-    protected void Decode<KeyType>(ref char character, KeyType key)
+    protected IEnumerator EnumerateDecryption<KeyType>(char[] translationBuffer, KeyType key)
+    {
+        float time = 0;
+        int position = 0;
+        for (int i = 0; i < translationBuffer.Length; i++)
+        {
+            if (translationBuffer[i] == ' ') { OnCharTranslate.Invoke(' '); continue; }
+            Decode(ref translationBuffer[i], position, ref key);
+            position++;
+            yield return new WaitForSeconds(Mathf.PerlinNoise1D(time) * typeSpeedMultiplier);
+            time += Time.fixedDeltaTime;
+        }
+    }
+
+    protected void Decode<KeyType>(ref char character, int position, ref KeyType key)
     {
         switch (cipherType)
         {
@@ -75,7 +122,8 @@ public class BaseCipher : MonoBehaviour
                 switch (key)
                 {
                     case int shift:
-                        character = (char)(((character + (26 - shift) - 'a') % 26) + 'a');
+                        character = (char)((alphabet[character] + 26 - shift) % 26);
+                        character += 'a';
                         break;
                     default:
                         Debug.LogError("Incorrect key type");
@@ -85,8 +133,9 @@ public class BaseCipher : MonoBehaviour
             case CipherSelector.CipherType.Vigenere:
                 switch (key)
                 {
-                    case string:
-
+                    case string word:
+                        character = (char)((alphabet[character] + 26 - alphabet[word[position % word.Length]]) % 26);
+                        character += 'a';
                         break;
                     default:
                         Debug.LogError("Incorrect key type");
@@ -97,17 +146,5 @@ public class BaseCipher : MonoBehaviour
                 break;
         }
         OnCharTranslate.Invoke(character);
-    }
-
-    protected IEnumerator EnumerateDecryption<KeyType>(char[] translationBuffer, KeyType key)
-    {
-        float time = 0;
-        for (int i = 0; i < translationBuffer.Length; i++)
-        {
-            if (translationBuffer[i] == ' ') { OnCharTranslate.Invoke(' '); continue; }
-            Decode(ref translationBuffer[i], key);
-            yield return new WaitForSeconds(letterShiftTimeCurve.Evaluate(time) * timeCurveMultiplier);
-            time += Time.fixedDeltaTime;
-        }
     }
 }

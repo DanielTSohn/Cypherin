@@ -12,7 +12,7 @@ PlayerSettings:
   targetDevice: 2
   useOnDemandResources: 0
   accelerometerFrequency: 60
-  companyName: DefaultCompany
+  companyName: CYBR
   productName: Cypherin
   defaultCursor: {fileID: 0}
   cursorHotspot: {x: 0, y: 0}
@@ -133,7 +133,7 @@ PlayerSettings:
   vulkanEnableLateAcquireNextImage: 0
   vulkanEnableCommandBufferRecycling: 1
   loadStoreDebugModeEnabled: 0
-  bundleVersion: 1.0
+  bundleVersion: 0.1
   preloadedAssets: []
   metroInputSource: 0
   wsaTransparentSwapchain: 0
@@ -583,7 +583,7 @@ PlayerSettings:
   webGLWasmArithmeticExceptions: 0
   webGLLinkerTarget: 1
   webGLThreadsSupport: 0
-  webGLDecompressionFallback: 0
+  webGLDecompressionFallback: 1
   webGLInitialMemorySize: 32
   webGLMaximumMemorySize: 2048
   webGLMemoryGrowthMode: 2
@@ -593,6 +593,7 @@ PlayerSettings:
   webGLPowerPreference: 2
   scriptingDefineSymbols:
     Standalone: MOREMOUNTAINS_NICEVIBRATIONS_INSTALLED
+    WebGL: MOREMOUNTAINS_NICEVIBRATIONS_INSTALLED
   additionalCompilerArguments: {}
   platformArchitecture: {}
   scriptingBackend: {}
@@ -625,7 +626,7 @@ PlayerSettings:
   m_RenderingPath: 1
   m_MobileRenderingPath: 1
   metroPackageName: Cypherin
-  metroPackageVersion: 
+  metroPackageVersion: 1.0.0.0
   metroCertificatePath: 
   metroCertificatePassword: 
   metroCertificateSubject: 
@@ -633,7 +634,7 @@ PlayerSettings:
   metroCertificateNotAfter: 0000000000000000
   metroApplicationDescription: Cypherin
   wsaImages: {}
-  metroTileShortName: 
+  metroTileShortName: Cypherin
   metroTileShowName: 0
   metroMediumTileShowName: 0
   metroLargeTileShowName: 0

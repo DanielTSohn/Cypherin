@@ -50,7 +50,7 @@ public class CipherSelector : MonoBehaviour
                     cipher.Encrypt(textInput.text.ToLower(), int.Parse(keyInput.text));
                     break;
                 case CipherType.Vigenere:
-                    cipher.Encrypt(textInput.text.ToLower(), keyInput.text);
+                    cipher.Encrypt(textInput.text.ToLower(), keyInput.text.ToLower());
                     break;
                 default:
                     break;
@@ -73,7 +73,7 @@ public class CipherSelector : MonoBehaviour
                     cipher.Decrypt(textInput.text.ToLower(), int.Parse(keyInput.text));
                     break;
                 case CipherType.Vigenere:
-                    cipher.Decrypt(textInput.text.ToLower(), keyInput.text);
+                    cipher.Decrypt(textInput.text.ToLower(), keyInput.text.ToLower());
                     break;
                 default:
                     break;
