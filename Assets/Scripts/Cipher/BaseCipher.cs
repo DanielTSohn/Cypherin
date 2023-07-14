@@ -2,48 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
-using UnityEngine.TextCore.Text;
-using UnityEngine.UIElements;
-
-/// <summary>
-/// Simple way to access alphabets as a dictionary with key being the char and value the relative position from 0
-/// </summary>
-public static class Alphabet
-{
-    /// <summary>
-    /// The english alphabet ordered by char with values from 0-25 with space included with value -1
-    /// </summary>
-    public static readonly Dictionary<char, int> English = new()
-        {
-            { 'a', 0 },
-            { 'b', 1 },
-            { 'c', 2 },
-            { 'd', 3 },
-            { 'e', 4 },
-            { 'f', 5 },
-            { 'g', 6 },
-            { 'h', 7 },
-            { 'i', 8 },
-            { 'j', 9 },
-            { 'k', 10 },
-            { 'l', 11 },
-            { 'm', 12 },
-            { 'n', 13 },
-            { 'o', 14 },
-            { 'p', 15 },
-            { 'q', 16 },
-            { 'r', 17 },
-            { 's', 18 },
-            { 't', 19 },
-            { 'u', 20 },
-            { 'v', 21 },
-            { 'w', 22 },
-            { 'x', 23 },
-            { 'y', 24 },
-            { 'z', 25 },
-            { ' ', -1 }
-        };
-}
 
 public class BaseCipher : MonoBehaviour
 {
