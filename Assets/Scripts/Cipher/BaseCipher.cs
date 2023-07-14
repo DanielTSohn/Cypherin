@@ -2,18 +2,18 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.TextCore.Text;
+using UnityEngine.UIElements;
 
-public class BaseCipher : MonoBehaviour
+/// <summary>
+/// Simple way to access alphabets as a dictionary with key being the char and value the relative position from 0
+/// </summary>
+public static class Alphabet
 {
-    [Tooltip("The time curve to shift between letters")]
-    [SerializeField] private float typeSpeedMultiplier = 1.0f;
-    [SerializeField] private AnimationCurve speedupCurve;
-    [HideInInspector] public CipherSelector.CipherType cipherType = CipherSelector.CipherType.Caesar;
-    public UnityEvent<char> OnCharTranslate;
-    public UnityEvent OnEncrypted;
-    public UnityEvent OnDecrypted;
-
-    Dictionary<char, int> alphabet = new Dictionary<char, int>()
+    /// <summary>
+    /// The english alphabet ordered by char with values from 0-25 with space included with value -1
+    /// </summary>
+    public static readonly Dictionary<char, int> English = new()
         {
             { 'a', 0 },
             { 'b', 1 },
@@ -40,121 +40,134 @@ public class BaseCipher : MonoBehaviour
             { 'w', 22 },
             { 'x', 23 },
             { 'y', 24 },
-            { 'z', 25 }
+            { 'z', 25 },
+            { ' ', -1 }
         };
+}
 
-    public void Encrypt<KeyType>(in string plainText, KeyType key)
-    {
-        StopAllCoroutines();
-        StartCoroutine(EnumerateEncryption(plainText.ToCharArray(), key));
-    }
+public class BaseCipher : MonoBehaviour
+{
+    [HideInInspector] public CipherSelector.CipherType cipherType = CipherSelector.CipherType.Caesar;
 
-    protected IEnumerator EnumerateEncryption<KeyType>(char[] translationBuffer, KeyType key)
+    [Tooltip("Called when encryption has finished")]
+    [SerializeField] private UnityEvent OnEncrypted;
+
+    [Tooltip("Called when decryption has finished")]
+    [SerializeField] private UnityEvent OnDecrypted;
+
+    /// <summary>
+    /// Encrypts the inputed plain text dynamically 
+    /// </summary>
+    /// <typeparam name="KeyType">The dynamic type of the key due to different needs of ciphers</typeparam>
+    /// <param name="plainText">The normal untranslated text to be encrypted</param>
+    /// <param name="translationBuffer">The translation buffer to store encrypted chars into, passed by reference</param>
+    /// <param name="key">The key used to encrypt the plain text, function handles logic of dynamic type</param>
+    /// <returns></returns>
+    public bool Encrypt<KeyType>(in LinkedList<(char, int)> plainText, out char[] translationBuffer, KeyType key)
     {
-        float time = 0;
+        /// Set size of buffer and start position at beginning of buffer
+        translationBuffer = new char[plainText.Count];
         int position = 0;
-        for (int i = 0; i < translationBuffer.Length; i++)
+        foreach (var charKey in plainText)
         {
-            if (translationBuffer[i] == ' ') { OnCharTranslate.Invoke(' '); continue; }
-            Encode(ref translationBuffer[i], position, ref key);
+            /// Default space value, will always adjust current position in buffer and iterate to next
+            char character = ' ';
+            /// If the charKey has a positional value to calculate from
+            if (charKey.Item2 >= 0)
+            {
+                switch (cipherType)
+                {
+                    case CipherSelector.CipherType.Caesar:
+                        switch (key)
+                        {
+                            case int shift:
+                                character = (char)((Alphabet.English[charKey.Item1] + shift) % 26);
+                                break;
+                            default:
+                                Debug.LogError("Incorrect key type");
+                                break;
+                        }
+                        break;
+                    case CipherSelector.CipherType.Vigenere:
+                        switch (key)
+                        {
+                            case string word:
+                                character = (char)((Alphabet.English[charKey.Item1] + Alphabet.English[word[position % word.Length]]) % 26);
+                                break;
+                            default:
+                                Debug.LogError("Incorrect key type, expected type string, got type : " + key.GetType());
+                                break;
+                        }
+                        break;
+                    default:
+                        return false;
+                }
+                /// Put the character value in range of the English alphabet
+                character += 'a';
+            }
+            translationBuffer[position] = character;
             position++;
-
-            float waitTime = Mathf.PerlinNoise1D(time) * typeSpeedMultiplier * speedupCurve.Evaluate(time);
-            if(waitTime >= 0) { yield return new WaitForSeconds(waitTime); }
-            time += Time.fixedDeltaTime;
         }
 
         OnEncrypted.Invoke();
+        return true;
     }
 
-    protected void Encode<KeyType>(ref char character, int position, ref KeyType key)
+    /// <summary>
+    /// Decrypts the inputed cipher text dynamically 
+    /// </summary>
+    /// <typeparam name="KeyType">The dynamic type of the key due to different needs of ciphers</typeparam>
+    /// <param name="cipherText">The encrypted cipher text to be decrypted</param>
+    /// <param name="translationBuffer">The translation buffer to store decrypted chars into, passed by reference</param>
+    /// <param name="key">The key used to decrypt the cipher text, function handles logic of dynamic type</param>
+    /// <returns></returns>
+    public bool Decrypt<KeyType>(in LinkedList<(char, int)> cipherText, out char[] translationBuffer, KeyType key)
     {
-        switch(cipherType)
-        {
-            case CipherSelector.CipherType.Caesar:
-                switch (key)
-                {
-                    case int shift:
-                        character = (char)((alphabet[character] + shift) % 26);
-                        character += 'a';
-                        break;
-                    default:
-                        Debug.LogError("Incorrect key type");
-                        break;
-                }
-                break;
-            case CipherSelector.CipherType.Vigenere:
-                switch (key)
-                {
-                    case string word:
-                        character = (char)((alphabet[character] + alphabet[word[position % word.Length]]) % 26);
-                        character += 'a';
-                        break;
-                    default:
-                        Debug.LogError("Incorrect key type");
-                        break;
-                }
-                break;
-            default:
-                break;
-        }
-        OnCharTranslate.Invoke(character);
-    }
-
-    public void Decrypt<KeyType>(in string cipherText, KeyType key)
-    {
-        StopAllCoroutines();
-        StartCoroutine(EnumerateDecryption(cipherText.ToCharArray(), key));
-    }
-
-    protected IEnumerator EnumerateDecryption<KeyType>(char[] translationBuffer, KeyType key)
-    {
-        float time = 1;
+        /// Set size of buffer and start position at beginning of buffer
+        translationBuffer = new char[cipherText.Count];
         int position = 0;
-        for (int i = 0; i < translationBuffer.Length; i++)
+        foreach (var charKey in cipherText)
         {
-            if (translationBuffer[i] == ' ') { OnCharTranslate.Invoke(' '); continue; }
-            Decode(ref translationBuffer[i], position, ref key);
+            /// Default space value, will always adjust current position in buffer and iterate to next
+            char character = ' ';
+            /// If the charKey has a positional value to calculate from
+            if (charKey.Item2 >= 0)
+            {
+                switch (cipherType)
+                {
+                    case CipherSelector.CipherType.Caesar:
+                        switch (key)
+                        {
+                            case int shift:
+                                character = (char)((Alphabet.English[charKey.Item1] + 26 - shift) % 26);
+                                break;
+                            default:
+                                Debug.LogError("Incorrect key type");
+                                break;
+                        }
+                        break;
+                    case CipherSelector.CipherType.Vigenere:
+                        switch (key)
+                        {
+                            case string word:
+                                character = (char)((Alphabet.English[charKey.Item1] + 26 - Alphabet.English[word[position % word.Length]]) % 26);
+                                break;
+                            default:
+                                Debug.LogError("Incorrect key type");
+                                break;
+                        }
+                        break;
+                    default:
+                        break;
+                }
+                /// Put the character value in range of the English alphabet
+                character += 'a';
+            }
+            translationBuffer[position] = character;
             position++;
-
-            float waitTime = Mathf.PerlinNoise1D(time) * typeSpeedMultiplier * speedupCurve.Evaluate(time);
-            if (waitTime >= 0) { yield return new WaitForSeconds(waitTime); }
-            time += Time.fixedDeltaTime;
         }
-        OnDecrypted.Invoke();
-    }
 
-    protected void Decode<KeyType>(ref char character, int position, ref KeyType key)
-    {
-        switch (cipherType)
-        {
-            case CipherSelector.CipherType.Caesar:
-                switch (key)
-                {
-                    case int shift:
-                        character = (char)((alphabet[character] + 26 - shift) % 26);
-                        character += 'a';
-                        break;
-                    default:
-                        Debug.LogError("Incorrect key type");
-                        break;
-                }
-                break;
-            case CipherSelector.CipherType.Vigenere:
-                switch (key)
-                {
-                    case string word:
-                        character = (char)((alphabet[character] + 26 - alphabet[word[position % word.Length]]) % 26);
-                        character += 'a';
-                        break;
-                    default:
-                        Debug.LogError("Incorrect key type");
-                        break;
-                }
-                break;
-            default:
-                break;
-        }
-        OnCharTranslate.Invoke(character);
+        OnEncrypted.Invoke();
+        return true;
     }
 }
