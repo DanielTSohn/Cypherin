@@ -1,20 +1,46 @@
+using MoreMountains.Tools;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UI;
 
-public class CipherSelector : MonoBehaviour
+public enum CipherType { Caesar, Vigenere }
+
+public struct TranslationRequest<KeyType>
+{
+    public TranslationRequest(CipherType cipher, bool encrypt, KeyType key)
+    {
+        CipherType = cipher;
+        Encrypt = encrypt;
+        Key = key;
+    }
+
+    /// <summary>
+    /// The type of cipher to encode / decode with
+    /// </summary>
+    public CipherType CipherType;
+
+    /// <summary>
+    /// True to encrypt, False to Decrypt
+    /// </summary>
+    public bool Encrypt;
+
+    /// <summary>
+    /// The key used to encrypt or Decrypt the message
+    /// </summary>
+    public KeyType Key;
+}
+
+public class CipherSelector : MonoBehaviour, MMEventListener<bool>
 {
     [Tooltip("The input field that will be translated")]
     [SerializeField] private TMP_InputField textInput;
-   
+
     [Tooltip("The input field that takes the key to encrypt to text input")]
     [SerializeField] private TMP_InputField keyInput;
-
-    [Tooltip("The cipher script used to encode and decode")]  
-    [SerializeField] private BaseCipher cipher;
 
     [Tooltip("The dropdown menu for selecting the type of cipher")]
     [SerializeField] private TMP_Dropdown cipherSelect;
@@ -22,14 +48,55 @@ public class CipherSelector : MonoBehaviour
     [Tooltip("The output field that displays the plain or cipher text")]
     [SerializeField] private TextMeshProUGUI outputText;
 
-    public enum CipherType { Caesar, Vigenere }
     [HideInInspector] public CipherType cipherType = CipherType.Caesar;
+
+    private char[] translationBuffer;
+    public int GetBufferLength() { return translationBuffer.Length; }
+    public void SetBufferSize(int size) { translationBuffer = new char[size]; }
+    public bool SetBufferChar(char c, int index)
+    {
+        try
+        {
+            translationBuffer[index] = c;
+            return true;
+        }
+        catch { return false; }
+    }
+
+    /// <summary>
+    /// Singleton pattern
+    /// </summary>
+    public static CipherSelector Instance { get; private set; }
 
     /// <summary>
     /// Used to store text values and their position in the English Alphabet
     /// </summary>
     private LinkedList<(char, int)> textValues = new();
-    
+    public int GetInputTextCount() { return textValues.Count; }
+    public LinkedListNode<(char, int)> GetTextInputFirstNode() { return textValues.First; }
+
+    public void OnEnable()
+    {
+        this.MMEventStartListening();
+    }
+
+    public void OnDisable()
+    {
+        this.MMEventStopListening();
+    }
+
+    private void Awake()
+    {
+        if(Instance != null && Instance != this)
+        {
+            Destroy(this);
+        }
+        else
+        {
+            Instance = this;
+        }
+    }
+
     /// <summary>
     /// Switches what encryption / decryption algorithm will be used, sets the key input field to try and stop user error
     /// </summary>
@@ -38,7 +105,6 @@ public class CipherSelector : MonoBehaviour
     {
         keyInput.text = string.Empty;
         cipherType = (CipherType)value;
-        cipher.cipherType = cipherType;
         switch (cipherType)
         {
             case CipherType.Caesar:
@@ -85,11 +151,23 @@ public class CipherSelector : MonoBehaviour
         }
     }
 
+    public void OnMMEvent(bool translated)
+    {
+        if(translated)
+        {
+            UpdateText();
+        }
+        else
+        {
+            outputText.text = "Translation Failed";
+        }
+    }
+
     /// <summary>
     /// Updates the output text field to whatever output from translating
     /// </summary>
     /// <param name="translationBuffer">The char array buffer to read from, passed in by reference</param>
-    public void UpdateText(in char[] translationBuffer)
+    public void UpdateText()
     {
         outputText.text = translationBuffer.ArrayToString();
         GUIUtility.systemCopyBuffer = outputText.text;
@@ -110,18 +188,12 @@ public class CipherSelector : MonoBehaviour
                 case CipherType.Caesar:
                     if(int.TryParse(keyInput.text, out int value))
                     {
-                        if (cipher.Encrypt(textValues, out char[] caesarBuffer, value % 26))
-                            UpdateText(caesarBuffer);
-                        else
-                            Debug.LogWarning("Encryption Failed");
+                        MMEventManager.TriggerEvent<TranslationRequest<int>>(new(cipherType, true, value % 26));
                     }
                     else { outputText.text = "Need an integer for the key"; }
                     break;
                 case CipherType.Vigenere:
-                    if(cipher.Encrypt(textValues, out char[] vigenereBuffer, keyInput.text.ToLower()))
-                        UpdateText(vigenereBuffer);
-                    else
-                        Debug.LogWarning("Encryption Failed");
+                    MMEventManager.TriggerEvent<TranslationRequest<string>>(new(cipherType, true, keyInput.text.ToLower()));
                     break;
                 default:
                     break;
@@ -148,18 +220,12 @@ public class CipherSelector : MonoBehaviour
                 case CipherType.Caesar:
                     if (int.TryParse(keyInput.text, out int value))
                     {
-                        if (cipher.Decrypt(textValues, out char[] caesarBuffer, value % 26))
-                            UpdateText(caesarBuffer);
-                        else
-                            Debug.LogWarning("Encryption Failed");
+                        MMEventManager.TriggerEvent<TranslationRequest<int>>(new(cipherType, false, value % 26));
                     }
                     else { outputText.text = "Need an integer for the key"; }
                     break;
                 case CipherType.Vigenere:
-                    if (cipher.Decrypt(textValues, out char[] vigenereBuffer, keyInput.text.ToLower()))
-                        UpdateText(vigenereBuffer);
-                    else
-                        Debug.LogWarning("Encryption Failed");
+                    MMEventManager.TriggerEvent<TranslationRequest<string>>(new(cipherType, false, keyInput.text.ToLower()));
                     break;
                 default:
                     break;
